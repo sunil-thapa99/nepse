@@ -45,8 +45,8 @@ Ensure you have the following installed:
 ### Installation Steps
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/qa-nepse-langchain.git
-cd qa-nepse-langchain
+git clone https://github.com/sunil-thapa99/nepse.git
+cd nepse
 
 # Create a virtual environment
 python -m venv venv
@@ -58,10 +58,24 @@ pip install -r requirements.txt
 
 ## Usage
 ### Data Extraction
-Run the following command to extract financial data:
 ```bash
-
+# Navigate to scrapper directory
+cd scrapper
 ```
+To automate the extraction of company list and it's financial data, run: 
+```bash
+python scrap.py
+```
+
+If you want to individually any set of codes:
+-  Run the following command to extract company list:
+      ```bash
+      python company_scrapper.py
+      ```
+-  Run the following command to extract financial data:
+      ```bash
+      python financial_scrapper.py
+      ```
 
 ### Data Processing & Storage
 ```bash
