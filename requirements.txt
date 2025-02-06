@@ -1,7 +1,5 @@
-opencv-python
-numpy
-easyocr
-pytesseract
-pillow
-pandas
-matplotlib
+html5lib
+requests
+bs4
+selenium
+lxml
