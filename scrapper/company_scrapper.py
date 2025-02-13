@@ -6,6 +6,9 @@ import os
 import warnings
 warnings.filterwarnings("ignore")
 
+# Database connection
+from database.create import create_tables
+
 class CompanyListScraper:
     """
     A web scraper to extract company data from the Sharesansar company list page.
@@ -22,6 +25,7 @@ class CompanyListScraper:
         """
         self.url = url
         self.output_dir = output_dir
+        self.cursor, self.conn = create_tables()
         try:
             self.driver = webdriver.Chrome()
         except Exception as e:
@@ -62,6 +66,9 @@ class CompanyListScraper:
             select_text = option.text
             time.sleep(2)
             company_csv_path = f"{self.output_dir}/{select_text}.csv"
+
+            # Insert into company table
+            self.cursor.execute(f"INSERT INTO SECTOR(name) VALUES ({select_text})")
             
             self.driver.find_element(By.XPATH, "//button[@id='btn_listed_submit']").click()
             time.sleep(2)
