@@ -7,25 +7,20 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # Database connection
-from database.create import create_tables
+from database.create import DatabaseManager
 
 class CompanyListScraper:
-    """
-    A web scraper to extract company data from the Sharesansar company list page.
-    It selects each sector, extracts company data, and saves it as CSV files.
-    """
-    
-    def __init__(self, url='https://www.sharesansar.com/company-list', output_dir='.'):
+    def __init__(self, url='https://www.sharesansar.com/company-list', output_dir='.'):        
         """
         Initializes the scraper with the target URL and output directory.
-
-        Parameters:
-        - url (str): The URL of the company list page.
-        - output_dir (str): Directory where extracted CSV files will be stored.
+        Establishes a database connection and initializes the web driver.
         """
         self.url = url
         self.output_dir = output_dir
-        self.cursor, self.conn = create_tables()
+        self.db_manager = DatabaseManager(database="nepse", host="localhost", user="postgres", password="1234", port="5433")
+        self.db_manager.create_tables()
+        self.conn = self.db_manager.connect()
+        self.cursor = self.conn.cursor()
         try:
             self.driver = webdriver.Chrome()
         except Exception as e:
@@ -41,7 +36,10 @@ class CompanyListScraper:
             print(f"Error opening page: {e}")
     
     def get_company_list(self):
-        """Extracts the list of available sectors from the dropdown menu."""
+        """
+        Extracts the list of available sectors from the dropdown menu.
+        Returns a list of sector values.
+        """
         try:
             form = self.driver.find_elements(By.XPATH, "//form[@id='frm_listed']")
             company_list = form[0].find_elements(By.XPATH, "//select[@name='sector']/option")
@@ -50,30 +48,63 @@ class CompanyListScraper:
             print(f"Error retrieving company list: {e}")
             return []
 
+    def insert_sector(self, sector_name):
+        """
+        Inserts a sector into the SECTOR table if it does not already exist.
+        Returns the sector ID.
+        """
+        try:
+            self.cursor.execute("INSERT INTO SECTOR (name) VALUES (%s) ON CONFLICT (name) DO NOTHING RETURNING id", (sector_name,))
+            sector_id = self.cursor.fetchone()
+            if sector_id is None:
+                self.cursor.execute("SELECT id FROM SECTOR WHERE name = %s", (sector_name,))
+                sector_id = self.cursor.fetchone()[0]
+            else:
+                sector_id = sector_id[0]
+            self.conn.commit()
+            return sector_id
+        except Exception as e:
+            print(f"Error inserting sector {sector_name}: {e}")
+            return None
+    
+    def insert_or_update_company(self, name, symbol, sector_id, listed_shares, paid_up_capital, market_cap):
+        """
+        Inserts a new company into the COMPANIES table or updates it if it already exists.
+        """
+        try:
+            self.cursor.execute(
+                """
+                INSERT INTO COMPANIES (name, symbol, sector_id, listed_shares, paid_up_capital, market_cap) 
+                VALUES (%s, %s, %s, %s, %s, %s) 
+                ON CONFLICT (name) 
+                DO UPDATE SET symbol = EXCLUDED.symbol, 
+                              sector_id = EXCLUDED.sector_id, 
+                              listed_shares = EXCLUDED.listed_shares, 
+                              paid_up_capital = EXCLUDED.paid_up_capital,
+                              market_cap = EXCLUDED.market_cap
+                """,
+                (name, symbol, sector_id, listed_shares, paid_up_capital, market_cap)
+            )
+            self.conn.commit()
+        except Exception as e:
+            print(f"Error inserting/updating company {name}: {e}")
+    
     def extract_company_data(self, company):
         """
-        Selects a company sector, extracts the table data, and saves it as a CSV file.
-        This method also handles pagination, extracting data from multiple pages if needed.
-        If the data is already extracted (based on content), it does not save again.
-
-        Parameters:
-        - company (str): The value attribute of the company sector option.
+        Extracts company data for a specific sector, inserts the data into the database,
+        and saves it to a CSV file.
         """
-
         try:
             option = self.driver.find_element(By.XPATH, f"//select[@name='sector']/option[@value='{company}']")
             option.click()
             select_text = option.text
             time.sleep(2)
-            company_csv_path = f"{self.output_dir}/{select_text}.csv"
-
-            # Insert into company table
-            self.cursor.execute(f"INSERT INTO SECTOR(name) VALUES ({select_text})")
+            sector_id = self.insert_sector(select_text)
             
             self.driver.find_element(By.XPATH, "//button[@id='btn_listed_submit']").click()
             time.sleep(2)
             all_data = []
-
+            
             while True:
                 try:
                     table = self.driver.find_element(By.ID, 'myTable')
@@ -90,26 +121,33 @@ class CompanyListScraper:
                 except Exception as e:
                     print(f"Error navigating pagination: {e}")
                     break
-
+            
             combined_df = pd.concat(all_data, ignore_index=True)
-
-            if os.path.exists(company_csv_path):
-                existing_df = pd.read_csv(company_csv_path)
-                if combined_df.equals(existing_df):
-                    print(f"Data for {select_text} is already up-to-date, skipping...")
-                    return
-
+            # combined_df.columns = ['S.N.', 'Symbol', 'Company', 'Listed Shares', 'Paid-up (Rs)', 'Total Paid-up Capital (Rs)', 'Market Capitalization (Rs)', 'Date of Operation', 'LTP', 'As Of']
+            
+            for _, row in combined_df.iterrows():
+                self.insert_or_update_company(
+                    row['Company'], row['Symbol'], sector_id, 
+                    row['Listed Shares'], row['Total Paid-up Capital (Rs)'], row['Market Capitalization (Rs)']
+                )
+            
+            company_csv_path = f"{self.output_dir}/{select_text}.csv"
             combined_df.to_csv(company_csv_path, mode='w', index=False)
             print(f"Data for {select_text} has been saved.")
         except Exception as e:
             print(f"Error extracting data for {company}: {e}")
     
     def close(self):
-        """Closes the Selenium WebDriver."""
+        """Closes the Selenium WebDriver and the database connection."""
         self.driver.quit()
+        self.cursor.close()
+        self.conn.close()
     
     def run(self):
-        """Executes the full scraping process."""
+        """
+        Executes the full scraping process by opening the webpage, extracting companies,
+        inserting/updating records, and saving data to CSV files.
+        """
         try:
             self.open_page()
             company_list = self.get_company_list()
