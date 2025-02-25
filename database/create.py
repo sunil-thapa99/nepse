@@ -48,9 +48,9 @@ class DatabaseManager:
                     name TEXT UNIQUE,
                     sector_id INT REFERENCES SECTOR(id) ON DELETE CASCADE,
                     symbol TEXT UNIQUE,
-                    listed_shares INT,
-                    market_cap INT,
-                    paid_up_capital INT
+                    listed_shares BIGINT,
+                    market_cap BIGINT,
+                    paid_up_capital BIGINT
                 )
             """,
             """ CREATE TABLE IF NOT EXISTS REPORTS (

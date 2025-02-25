@@ -1,10 +1,19 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import pandas as pd
+
 import time
 import os
+import sys
 import warnings
 warnings.filterwarnings("ignore")
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(SCRIPT_DIR)
+
+sys.path.append(ROOT_DIR)
+# print(ROOT_DIR, os.getcwd())
+# exit()
 
 # Database connection
 from database.create import DatabaseManager
@@ -104,14 +113,12 @@ class CompanyListScraper:
             self.driver.find_element(By.XPATH, "//button[@id='btn_listed_submit']").click()
             time.sleep(2)
             all_data = []
-            
             while True:
                 try:
                     table = self.driver.find_element(By.ID, 'myTable')
                     table_html = table.get_attribute('outerHTML')
                     df = pd.read_html(table_html)[0]
                     all_data.append(df)
-                    
                     next_button = self.driver.find_element(By.XPATH, "//a[contains(text(), 'Next')]")
                     if "disabled" in next_button.get_attribute("class"):
                         break
@@ -121,14 +128,14 @@ class CompanyListScraper:
                 except Exception as e:
                     print(f"Error navigating pagination: {e}")
                     break
-            
             combined_df = pd.concat(all_data, ignore_index=True)
             # combined_df.columns = ['S.N.', 'Symbol', 'Company', 'Listed Shares', 'Paid-up (Rs)', 'Total Paid-up Capital (Rs)', 'Market Capitalization (Rs)', 'Date of Operation', 'LTP', 'As Of']
-            
+
             for _, row in combined_df.iterrows():
+                print(sector_id, row['Company'])
                 self.insert_or_update_company(
                     row['Company'], row['Symbol'], sector_id, 
-                    row['Listed Shares'], row['Total Paid-up Capital (Rs)'], row['Market Capitalization (Rs)']
+                    row['Listed Share'], row['Total Paid-up Capital (Rs)'], row['Market Capitalization (Rs)']
                 )
             
             company_csv_path = f"{self.output_dir}/{select_text}.csv"

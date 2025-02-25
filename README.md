@@ -12,6 +12,7 @@ This project focuses on developing a Question Answering (QA) system for NEPSE-li
 ## Tech Stack
 - **Python**: Core language for implementation.
 - **Selenium**: For web scraping and data extraction.
+- **PostgreSQL**: Used as a database
 - **LangChain**: Framework for developing LLM-powered applications.
 - **Vector Database**: (e.g., FAISS, ChromaDB, Pinecone) for efficient retrieval of relevant documents.
 - **Ollama (Optional)**: Open-source LLM for QA processing.

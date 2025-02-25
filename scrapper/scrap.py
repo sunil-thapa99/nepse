@@ -1,12 +1,14 @@
-from company_scrapper import CompanyListScraper
-from financial_scrapper import FinancialReportScraper
+from scrapper.company_scrapper import CompanyListScraper
+from scrapper.financial_scrapper import FinancialReportScraper
 import os
 import pandas as pd
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 def main():
     # Define output directories
-    company_list_dir = "../data/company_list"
-    financial_reports_dir = "../data/financial_reports"
+    company_list_dir = os.path.join(ROOT_DIR, "data/company_list")
+    financial_reports_dir = os.path.join(ROOT_DIR, "data/financial_reports")
     
     # Ensure directories exist
     if not os.path.exists(company_list_dir):
