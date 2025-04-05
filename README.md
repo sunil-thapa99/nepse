@@ -58,6 +58,14 @@ pip install -r requirements.txt
 ```
 
 ## Usage
+
+### Create database
+```bash
+# Navigate to database directory 
+cd scrapper
+python create.py
+```
+
 ### Data Extraction
 ```bash
 # Navigate to scrapper directory
@@ -77,6 +85,10 @@ If you want to individually any set of codes:
       ```bash
       python financial_scrapper.py
       ```
+
+#### TO-DO:
+-  If companies financial report is stored in report_data, don't duplicatly store it: Financial Scrapper -> function insert_report_data
+-  Remove creation of data directory
 
 ### Data Processing & Storage
 ```bash

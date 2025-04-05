@@ -169,7 +169,6 @@ class CompanyListScraper:
                 report_scraper = FinancialReportScraper(company_id=company_id, url=company_url, 
                                                         output_dir=company_report_dir, conn=self.conn)
                 report_scraper.run()
-                break
             except Exception as e:
                 print(f"Failed to extract information for: {symbol}: {e}")
         self.close()
@@ -190,7 +189,6 @@ class CompanyListScraper:
             company_list = self.get_company_list()
             for company in company_list:
                 self.extract_company_data(company)
-                break
             self.fetch_financial_reports()
         except Exception as e:
             print(f"Unexpected error in run method: {e}")

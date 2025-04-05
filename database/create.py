@@ -48,16 +48,16 @@ class DatabaseManager:
                     name TEXT UNIQUE,
                     sector_id INT REFERENCES SECTOR(id) ON DELETE CASCADE,
                     symbol TEXT UNIQUE,
-                    listed_shares BIGINT,
-                    market_cap BIGINT,
-                    paid_up_capital BIGINT
+                    listed_shares NUMERIC(16, 2),
+                    market_cap NUMERIC(16, 2),
+                    paid_up_capital NUMERIC(16, 2)
                 )
             """,
             """ CREATE TABLE IF NOT EXISTS REPORTS (
                     id SERIAL PRIMARY KEY,
                     company_id INT REFERENCES COMPANIES(id) ON DELETE CASCADE,
                     report_type TEXT CHECK (report_type IN ('Balance Sheet', 'Profit & Loss', 'Key Metrics', 'Ratio Analysis', 'Others')),
-                    fiscal_year INT,
+                    fiscal_year TEXT,
                     quarter INT,
                     uploaded_at TIMESTAMP DEFAULT NOW(),
                     UNIQUE (company_id, fiscal_year, quarter, report_type)
