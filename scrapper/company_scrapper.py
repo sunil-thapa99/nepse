@@ -8,18 +8,27 @@ import sys
 import warnings
 warnings.filterwarnings("ignore")
 
+from financial_scrapper import FinancialReportScraper
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(SCRIPT_DIR)
-
+print(ROOT_DIR)
 sys.path.append(ROOT_DIR)
-# print(ROOT_DIR, os.getcwd())
-# exit()
+# Define output directories
+company_list_dir = os.path.join(ROOT_DIR, "data/company_list")
+financial_reports_dir = os.path.join(ROOT_DIR, "data/financial_reports")
+
+# Ensure directories exist
+if not os.path.exists(company_list_dir):
+    os.makedirs(company_list_dir)
+if not os.path.exists(financial_reports_dir):
+    os.makedirs(financial_reports_dir)
 
 # Database connection
 from database.create import DatabaseManager
 
 class CompanyListScraper:
-    def __init__(self, url='https://www.sharesansar.com/company-list', output_dir='.'):        
+    def __init__(self, url='https://www.sharesansar.com/company-list', output_dir='.',): 
         """
         Initializes the scraper with the target URL and output directory.
         Establishes a database connection and initializes the web driver.
@@ -144,6 +153,27 @@ class CompanyListScraper:
         except Exception as e:
             print(f"Error extracting data for {company}: {e}")
     
+    def fetch_financial_reports(self):
+        """
+        Fetches financial reports for a specific company.
+        """
+        self.cursor.execute("SELECT id, symbol FROM COMPANIES")
+        companies = self.cursor.fetchall()
+
+        # Scrape financial reports for each company
+        for company_id, symbol in companies:
+            print(f"Processing financial reports for {symbol}...")
+            try:
+                company_url = f"https://www.sharesansar.com/company/{symbol.lower()}"
+                company_report_dir = os.path.join(financial_reports_dir, symbol.lower()) 
+                report_scraper = FinancialReportScraper(company_id=company_id, url=company_url, 
+                                                        output_dir=company_report_dir, conn=self.conn)
+                report_scraper.run()
+                break
+            except Exception as e:
+                print(f"Failed to extract information for: {symbol}: {e}")
+        self.close()
+
     def close(self):
         """Closes the Selenium WebDriver and the database connection."""
         self.driver.quit()
@@ -160,7 +190,8 @@ class CompanyListScraper:
             company_list = self.get_company_list()
             for company in company_list:
                 self.extract_company_data(company)
-            self.close()
+                break
+            self.fetch_financial_reports()
         except Exception as e:
             print(f"Unexpected error in run method: {e}")
             self.close()

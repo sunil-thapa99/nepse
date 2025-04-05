@@ -1,28 +1,20 @@
-from scrapper.company_scrapper import CompanyListScraper
-from scrapper.financial_scrapper import FinancialReportScraper
+from company_scrapper import CompanyListScraper
+# # from financial_scrapper import FinancialReportScraper
 import os
-import pandas as pd
-
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+import sys
+# import pandas as pd
 
 def main():
-    # Define output directories
-    company_list_dir = os.path.join(ROOT_DIR, "data/company_list")
-    financial_reports_dir = os.path.join(ROOT_DIR, "data/financial_reports")
-    
-    # Ensure directories exist
-    if not os.path.exists(company_list_dir):
-        os.makedirs(company_list_dir)
-    if not os.path.exists(financial_reports_dir):
-        os.makedirs(financial_reports_dir)
     
     try:
         # Step 1: Scrape the list of companies
+        
         print("Starting Company List Scraper...")
-        company_scraper = CompanyListScraper(output_dir=company_list_dir)
+        company_scraper = CompanyListScraper()
         company_scraper.run()
         print("Company list scraping completed.")
-
+        
+        '''
         # Read the extracted company list
         keywords = ["debentures", "bonds", "mutual", "preference", "promoter"]
         company_files = [
@@ -45,7 +37,8 @@ def main():
                 report_scraper.run()
                 report_scraper.close()
                 print(f"Financial report scraping completed for {company}.")
-    
+        print("All scraping processes completed successfully.")
+        '''
     except Exception as e:
         print(f"Error during scraping process: {e}")
 
